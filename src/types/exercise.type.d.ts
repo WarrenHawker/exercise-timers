@@ -10,3 +10,5 @@ type Entry = {
   isCurrent: boolean;
   isNext: boolean;
 };
+
+type Section = 'warmup' | 'main' | 'cooldown';

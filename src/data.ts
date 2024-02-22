@@ -13,7 +13,7 @@ const entries: Entry[] = [
     name: 'Arm circles',
     time: 1,
     isCurrent: false,
-    isNext: false,
+    isNext: true,
   },
   {
     id: 3,

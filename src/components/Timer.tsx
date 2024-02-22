@@ -3,7 +3,7 @@ import { useInterval } from 'usehooks-ts';
 
 interface Props {
   id: number;
-  time: number;
+  time: number | undefined;
   startNextExercise: () => void;
 }
 
@@ -15,14 +15,16 @@ export default function Timer({ id, time, startNextExercise }: Props) {
   const timer = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    setPause(false);
-    setFinished(false);
-    if (time < 60) {
-      setMinutes(0);
-      setSeconds(time);
-    } else {
-      setMinutes(Math.floor(time / 60));
-      setSeconds(time % 60);
+    if (time) {
+      setPause(false);
+      setFinished(false);
+      if (time < 60) {
+        setMinutes(0);
+        setSeconds(time);
+      } else {
+        setMinutes(Math.floor(time / 60));
+        setSeconds(time % 60);
+      }
     }
   }, [id]);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Timer from './components/Timer';
 import entries from './data';
 
@@ -14,38 +14,15 @@ const App = () => {
   );
 
   const [allEntries, setAllEntries] = useState<Entry[]>(entries);
-  console.log(allEntries);
-
-  const [currentEntry, setCurrentEntry] = useState<Entry>(entries[0]);
-  console.log('current', currentEntry);
-  const [nextEntry, setNextEntry] = useState<Entry>(entries[1]);
 
   const [currentCircuit, setCurrentCircuit] = useState(1);
   const [totalCurcuits, setTotalCurcuits] = useState(3);
 
-  const [warmupFinished, setWarmupFinished] = useState(false);
+  const [currentSection, setCurrentSection] = useState<Section>('warmup');
   const [workoutFinished, setWorkoutFinished] = useState(false);
 
-  useEffect(() => {
-    //set "current entry" every time the entries array gets updated
-    for (let i = 0; i < allEntries.length; i++) {
-      const entry = allEntries[i];
-      if (entry.isCurrent) {
-        setCurrentEntry(entry);
-        break;
-      }
-    }
-    //set "next entry" every time the entries array gets updated
-    for (let i = 0; i < allEntries.length; i++) {
-      const entry = allEntries[i];
-      if (entry.isNext) {
-        setNextEntry(entry);
-        break;
-      }
-    }
-  }, [allEntries]);
-
   const startNextExercise = () => {
+    const currentEntry = allEntries.filter((i) => i.isCurrent)[0];
     const currentEntryIndex = allEntries.indexOf(currentEntry);
     //if at the end of the array, cycle back to the start of array again
     if (currentEntryIndex == allEntries.length - 1) {
@@ -114,20 +91,20 @@ const App = () => {
       <p>
         Circuit: {currentCircuit} / {totalCurcuits}
       </p>
-      <h2>Current Exercise: {currentEntry.name}</h2>
-      {currentEntry.time ? (
+      <h2>Current Exercise: {allEntries.filter((i) => i.isCurrent)[0].name}</h2>
+      {allEntries.filter((i) => i.isCurrent)[0].time ? (
         <Timer
-          id={currentEntry.id}
-          time={currentEntry.time}
+          id={allEntries.filter((i) => i.isCurrent)[0].id}
+          time={allEntries.filter((i) => i.isCurrent)[0].time}
           startNextExercise={startNextExercise}
         />
       ) : (
         <>
-          <h2>Reps: {currentEntry.reps}</h2>
+          <h2>Reps: {allEntries.filter((i) => i.isCurrent)[0].reps}</h2>
           <button onClick={startNextExercise}>Next Exercise</button>
         </>
       )}
-      <h3>Next Exercise: {nextEntry.name}</h3>
+      <h3>Next Exercise: {allEntries.filter((i) => i.isNext)[0].name}</h3>
     </>
   );
 };
