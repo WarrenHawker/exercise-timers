@@ -1,110 +1,169 @@
-import { useState } from 'react';
-import Timer from './components/Timer';
-import entries from './data';
+import { useRef, useState } from 'react';
+import { useInterval } from 'usehooks-ts';
 
 const App = () => {
-  const [warmup, setWarmup] = useState<Entry[]>(
-    entries.filter((i) => i.type == 'warmup')
-  );
-  const [main, setMain] = useState<Entry[]>(
-    entries.filter((i) => i.type == 'exercise' || i.type == 'rest')
-  );
-  const [cooldown, setCooldown] = useState<Entry[]>(
-    entries.filter((i) => i.type == 'cooldown')
-  );
+  const [minutes, setMinutes] = useState(0);
+  const [seconds, setSeconds] = useState(0);
+  const [inputMinutes, setInputMinutes] = useState(0);
+  const [inputSeconds, setInputSeconds] = useState(0);
+  //timer status: "not started", "active", "paused", "finished"
+  const [status, setStatus] = useState('not started');
+  const timer = useRef(null);
+  const sound = new Audio('/public/ding.mp3');
 
-  const [allEntries, setAllEntries] = useState<Entry[]>(entries);
-
-  const [currentCircuit, setCurrentCircuit] = useState(1);
-  const [totalCurcuits, setTotalCurcuits] = useState(3);
-
-  const [currentSection, setCurrentSection] = useState<Section>('warmup');
-  const [workoutFinished, setWorkoutFinished] = useState(false);
-
-  const startNextExercise = () => {
-    const currentEntry = allEntries.filter((i) => i.isCurrent)[0];
-    const currentEntryIndex = allEntries.indexOf(currentEntry);
-    //if at the end of the array, cycle back to the start of array again
-    if (currentEntryIndex == allEntries.length - 1) {
-      setAllEntries((prevEntries) => {
-        return prevEntries.map((entry, index) => {
-          if (index == 0) {
-            return { ...entry, isCurrent: true, isNext: false };
-          } else if (index == 1) {
-            return { ...entry, isCurrent: false, isNext: true };
-          } else {
-            return { ...entry, isCurrent: false, isNext: false };
-          }
-        });
-      });
-      //if total number of circuits is reached, end the workout
-      if (currentCircuit == totalCurcuits) {
-        setWorkoutFinished(true);
-        return;
+  const changeTimer = () => {
+    if (status == 'active' && timer.current) {
+      if (minutes == 0 && seconds == 1) {
+        setStatus('finished');
+        setSeconds(0);
+        setMinutes(0);
+        sound.play();
+      } else if (seconds == 0) {
+        setMinutes((prev) => prev - 1);
+        setSeconds(59);
       } else {
-        setCurrentCircuit((prev) => prev + 1);
-        return;
+        setSeconds((prev) => prev - 1);
       }
-      //if at penultimate entry in array, set next entry to the first index
-    } else if (currentEntryIndex == allEntries.length - 2) {
-      setAllEntries((prevEntries) => {
-        return prevEntries.map((entry, index) => {
-          if (index == allEntries.length - 1) {
-            return { ...entry, isCurrent: true, isNext: false };
-          } else if (index == 0) {
-            return { ...entry, isCurrent: false, isNext: true };
-          } else if (index == 1) {
-            return { ...entry, isCurrent: false, isNext: false };
-          } else {
-            return { ...entry, isCurrent: false, isNext: false };
-          }
-        });
-      });
-      //else cycle through array as normal
-    } else {
-      setAllEntries((prevEntries) => {
-        return prevEntries.map((entry, index) => {
-          if (entry.isCurrent) {
-            return { ...entry, isCurrent: false };
-          } else if (index == currentEntryIndex + 1) {
-            return { ...entry, isCurrent: true, isNext: false };
-          } else if (index == currentEntryIndex + 2) {
-            return { ...entry, isNext: true };
-          } else return { ...entry };
-        });
-      });
     }
   };
 
-  if (workoutFinished) {
-    return (
-      <>
-        <h1>exercise timer app</h1>
-        <h2>Workout Complete</h2>
-      </>
-    );
-  }
+  useInterval(changeTimer, 1000);
+
+  const resetInputs = () => {
+    setInputMinutes(0);
+    setInputSeconds(0);
+  };
+
+  const incrementMinutes = () => {
+    setInputMinutes((prev) => prev + 1);
+  };
+
+  const decrementMinutes = () => {
+    setInputMinutes((prev) => {
+      if (prev < 1) {
+        return 0;
+      } else {
+        return prev - 1;
+      }
+    });
+  };
+
+  const incrementSeconds = () => {
+    setInputSeconds((prev) => {
+      if (prev > 58) {
+        return 59;
+      } else {
+        return prev + 1;
+      }
+    });
+  };
+
+  const decrementSeconds = () => {
+    setInputSeconds((prev) => {
+      if (prev < 1) {
+        return 0;
+      } else {
+        return prev - 1;
+      }
+    });
+  };
+
+  const convertTime = (time: number) => {
+    if (time == 0) {
+      return '00';
+    } else if (time < 10) {
+      return `0${time}`;
+    } else return time;
+  };
+
+  const controlTimer = () => {
+    //if minute and second inputs are zero, do nothing
+    if (inputMinutes == 0 && inputSeconds == 0) {
+      setStatus('not started');
+      return;
+    }
+
+    //if status is "not started" or "finished", set to "active"
+    if (status == 'not started' || status == 'finished') {
+      setStatus('active');
+      setMinutes(inputMinutes);
+      setSeconds(inputSeconds);
+      return;
+    }
+
+    //if status is "active", set to "paused"
+    if (status == 'active') {
+      setStatus('paused');
+      return;
+    }
+
+    //if status is "paused", set to "active"
+    if (status == 'paused') {
+      setStatus('active');
+      return;
+    }
+  };
+
+  const restartTimer = () => {
+    setStatus('active');
+    setMinutes(inputMinutes);
+    setSeconds(inputSeconds);
+  };
 
   return (
     <>
-      <h1>exercise timer app</h1>
-      <p>
-        Circuit: {currentCircuit} / {totalCurcuits}
-      </p>
-      <h2>Current Exercise: {allEntries.filter((i) => i.isCurrent)[0].name}</h2>
-      {allEntries.filter((i) => i.isCurrent)[0].time ? (
-        <Timer
-          id={allEntries.filter((i) => i.isCurrent)[0].id}
-          time={allEntries.filter((i) => i.isCurrent)[0].time}
-          startNextExercise={startNextExercise}
-        />
-      ) : (
-        <>
-          <h2>Reps: {allEntries.filter((i) => i.isCurrent)[0].reps}</h2>
-          <button onClick={startNextExercise}>Next Exercise</button>
-        </>
-      )}
-      <h3>Next Exercise: {allEntries.filter((i) => i.isNext)[0].name}</h3>
+      <div className="timer-inputs">
+        <div className="number-input-container">
+          <button onClick={incrementMinutes}>+</button>
+          <input
+            type="number"
+            value={inputMinutes}
+            onChange={(e) => {
+              setInputMinutes(parseInt(e.target.value));
+            }}
+          />
+          <button onClick={decrementMinutes}>-</button>
+        </div>
+
+        <div className="number-input-container">
+          <button onClick={incrementSeconds}>+</button>
+          <input
+            type="number"
+            value={inputSeconds}
+            onChange={(e) => {
+              setInputSeconds(parseInt(e.target.value));
+            }}
+          />
+          <button onClick={decrementSeconds}>-</button>
+        </div>
+        <button onClick={resetInputs} className="reset-inputs">
+          Reset Inputs
+        </button>
+      </div>
+
+      <h3
+        ref={timer}
+        className={
+          status == 'active'
+            ? 'green'
+            : status == 'finished' || status == 'paused'
+            ? 'red'
+            : ''
+        }
+      >
+        {status == 'not started'
+          ? '-- : --'
+          : `${convertTime(minutes)} :
+        ${convertTime(seconds)}`}
+      </h3>
+      <div className="timer-controls">
+        <button onClick={controlTimer}>
+          {status == 'active' ? 'Pause' : 'Start'}
+        </button>
+        {(status == 'active' || status == 'paused') && (
+          <button onClick={restartTimer}>Restart</button>
+        )}
+      </div>
     </>
   );
 };
