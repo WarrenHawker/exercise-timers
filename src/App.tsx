@@ -9,7 +9,7 @@ const App = () => {
   //timer status: "not started", "active", "paused", "finished"
   const [status, setStatus] = useState('not started');
   const timer = useRef(null);
-  const sound = new Audio('/public/ding.mp3');
+  const sound = new Audio('/ding.mp3');
 
   const changeTimer = () => {
     if (status == 'active' && timer.current) {
